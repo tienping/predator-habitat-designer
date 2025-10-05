@@ -142,7 +142,6 @@
             font-size: 12px;
         }
 
-        /* Fix dropdown colors */
         select option {
             background: #1a1d3a;
             color: #fff;
@@ -475,7 +474,6 @@
             color: #ccc;
         }
 
-        /* Save/Load buttons */
         .save-buttons {
             display: flex;
             gap: 8px;
@@ -778,7 +776,7 @@
                         </div>
                     </div>
 
-                    <!-- NEW: Equipment Inventory -->
+                    <!-- Equipment Inventory -->
                     <div class="collapsible-section">
                         <div class="collapsible-header" onclick="toggleSection(this)">
                             <h2>📋 Room Inventory</h2>
@@ -1550,7 +1548,7 @@
             showRoomProperties(room);
         }
 
-        // NEW: Equipment management functions
+        // Equipment management functions
         function updateEquipmentList(room) {
             const equipmentList = document.getElementById('equipment-list');
             
@@ -1613,7 +1611,7 @@
             }
         }
 
-        // NEW: Save/Load functionality
+        // SAVE/LOAD FUNCTIONALITY - THE MISSING FEATURES!
         function saveHabitat() {
             const habitatData = {
                 rooms: rooms.map(room => ({
