@@ -1,0 +1,1945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Space Habitat Designer - Enhanced Edition</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1d3a 100%);
+            color: #fff;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 380px;
+            height: 100vh;
+            background: rgba(20, 25, 45, 0.95);
+            padding: 15px;
+            overflow-y: auto;
+            box-shadow: 4px 0 15px rgba(0, 0, 0, 0.5);
+            flex-shrink: 0;
+        }
+
+        .sidebar::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .sidebar::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background: rgba(0, 212, 255, 0.4);
+            border-radius: 4px;
+        }
+
+        .main-view {
+            flex: 1;
+            position: relative;
+            height: 100vh;
+        }
+
+        h1 {
+            font-size: 22px;
+            margin-bottom: 5px;
+            color: #00d4ff;
+            text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+        }
+
+        .subtitle {
+            font-size: 11px;
+            color: #888;
+            margin-bottom: 15px;
+        }
+
+        .collapsible-section {
+            margin-bottom: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            overflow: hidden;
+        }
+
+        .collapsible-header {
+            padding: 12px 15px;
+            background: rgba(0, 212, 255, 0.1);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s;
+            user-select: none;
+        }
+
+        .collapsible-header:hover {
+            background: rgba(0, 212, 255, 0.2);
+        }
+
+        .collapsible-header h2 {
+            font-size: 14px;
+            color: #00d4ff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .collapsible-arrow {
+            transition: transform 0.3s;
+            color: #00d4ff;
+            font-size: 18px;
+        }
+
+        .collapsible-section.collapsed .collapsible-arrow {
+            transform: rotate(-90deg);
+        }
+
+        .collapsible-content {
+            padding: 15px;
+            display: block;
+        }
+
+        .collapsible-section.collapsed .collapsible-content {
+            display: none;
+        }
+
+        .control-group {
+            margin-bottom: 12px;
+        }
+
+        label {
+            display: block;
+            font-size: 11px;
+            margin-bottom: 5px;
+            color: #aaa;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 4px;
+            color: #fff;
+            font-size: 12px;
+        }
+
+        /* Fix dropdown colors */
+        select option {
+            background: #1a1d3a;
+            color: #fff;
+        }
+
+        input[type="range"] {
+            padding: 0;
+            height: 6px;
+            background: rgba(0, 212, 255, 0.2);
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #00d4ff;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+
+        input[type="color"] {
+            height: 40px;
+            cursor: pointer;
+            padding: 2px;
+        }
+
+        .btn {
+            padding: 10px 15px;
+            background: linear-gradient(135deg, #00d4ff 0%, #0088ff 100%);
+            border: none;
+            border-radius: 6px;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            margin-top: 8px;
+            font-size: 12px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 212, 255, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
+        }
+
+        .room-list {
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        .room-item {
+            padding: 10px;
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 6px;
+            margin-bottom: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 12px;
+        }
+
+        .room-item:hover {
+            background: rgba(0, 212, 255, 0.2);
+            transform: translateX(3px);
+        }
+
+        .room-item.selected {
+            background: rgba(0, 212, 255, 0.3);
+            border-color: rgba(0, 212, 255, 0.8);
+            box-shadow: 0 0 12px rgba(0, 212, 255, 0.3);
+        }
+
+        .material-grid, .shape-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .material-option, .shape-option {
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            border-radius: 6px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 10px;
+        }
+
+        .material-option:hover, .shape-option:hover {
+            background: rgba(0, 212, 255, 0.2);
+        }
+
+        .material-option.selected, .shape-option.selected {
+            border-color: #00d4ff;
+            background: rgba(0, 212, 255, 0.3);
+        }
+
+        .detail-items {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .detail-item {
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 4px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 10px;
+        }
+
+        .detail-item:hover {
+            background: rgba(0, 212, 255, 0.2);
+            transform: scale(1.05);
+        }
+
+        .value-display {
+            display: inline-block;
+            margin-left: 8px;
+            color: #00d4ff;
+            font-weight: bold;
+            font-size: 11px;
+        }
+
+        .tab-buttons {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 4px;
+            color: #aaa;
+            cursor: pointer;
+            font-size: 10px;
+            transition: all 0.3s;
+        }
+
+        .tab-btn.active {
+            background: rgba(0, 212, 255, 0.3);
+            border-color: #00d4ff;
+            color: #00d4ff;
+        }
+
+        .controls-hint {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(20, 25, 45, 0.95);
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 10px;
+            color: #aaa;
+            text-align: left;
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            z-index: 100;
+            pointer-events: none;
+            line-height: 1.5;
+            max-width: 280px;
+        }
+
+        .mode-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(20, 25, 45, 0.95);
+            padding: 12px 20px;
+            border-radius: 8px;
+            border: 2px solid #00d4ff;
+            font-size: 12px;
+            font-weight: bold;
+            color: #00d4ff;
+        }
+
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+            background: #0a0e27;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .stat-box {
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 9px;
+            color: #888;
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 14px;
+            color: #00d4ff;
+            font-weight: bold;
+        }
+
+        .tool-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .tool-btn {
+            padding: 12px 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            border-radius: 6px;
+            color: #aaa;
+            cursor: pointer;
+            font-size: 10px;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .tool-btn:hover {
+            background: rgba(0, 212, 255, 0.2);
+        }
+
+        .tool-btn.active {
+            background: rgba(0, 212, 255, 0.3);
+            border-color: #00d4ff;
+            color: #00d4ff;
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+        }
+
+        .axis-controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+            margin: 10px 0;
+        }
+
+        .axis-control {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .axis-label {
+            font-size: 10px;
+            color: #00d4ff;
+            font-weight: bold;
+        }
+
+        .axis-btn {
+            width: 100%;
+            padding: 8px;
+            background: rgba(0, 212, 255, 0.2);
+            border: 1px solid rgba(0, 212, 255, 0.4);
+            border-radius: 4px;
+            color: #fff;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .axis-btn:hover {
+            background: rgba(0, 212, 255, 0.4);
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+        
+        .status-good {
+            background: #00ff00;
+        }
+        
+        .status-warning {
+            background: #ffff00;
+        }
+        
+        .status-error {
+            background: #ff0000;
+        }
+
+        .analysis-section {
+            margin-bottom: 15px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            border: 1px solid rgba(0, 212, 255, 0.2);
+        }
+
+        .analysis-title {
+            font-size: 12px;
+            font-weight: bold;
+            color: #00d4ff;
+            margin-bottom: 8px;
+        }
+
+        .analysis-content {
+            font-size: 11px;
+            line-height: 1.4;
+            color: #ccc;
+        }
+
+        /* Save/Load buttons */
+        .save-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .save-btn {
+            flex: 1;
+            padding: 8px 12px;
+            background: rgba(46, 204, 113, 0.3);
+            border: 1px solid rgba(46, 204, 113, 0.5);
+            border-radius: 4px;
+            color: #fff;
+            cursor: pointer;
+            font-size: 10px;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .save-btn:hover {
+            background: rgba(46, 204, 113, 0.5);
+        }
+
+        .equipment-item {
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 4px;
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+        }
+
+        .equipment-delete {
+            background: #e74c3c;
+            border: none;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 9px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h1>🚀 Habitat Designer Pro</h1>
+            <p class="subtitle">Advanced space station builder</p>
+
+            <!-- Tool Selection -->
+            <div class="tool-buttons">
+                <div class="tool-btn active" data-tool="select" onclick="setActiveTool('select')">
+                    <div>🔍</div>
+                    <div>Select</div>
+                </div>
+                <div class="tool-btn" data-tool="move" onclick="setActiveTool('move')">
+                    <div>↔️</div>
+                    <div>Move</div>
+                </div>
+                <div class="tool-btn" data-tool="scale" onclick="setActiveTool('scale')">
+                    <div>📐</div>
+                    <div>Scale</div>
+                </div>
+            </div>
+
+            <div class="tab-buttons">
+                <div class="tab-btn active" onclick="switchTab('create')">Create</div>
+                <div class="tab-btn" onclick="switchTab('rooms')">Rooms (<span id="room-count">0</span>)</div>
+                <div class="tab-btn" onclick="switchTab('properties')">Properties</div>
+                <div class="tab-btn" onclick="switchTab('examine')">🔬 Examine</div>
+            </div>
+
+            <!-- CREATE TAB -->
+            <div id="create-tab">
+                <div style="background: rgba(0, 212, 255, 0.15); padding: 10px; border-radius: 6px; margin-bottom: 15px; border: 1px solid rgba(0, 212, 255, 0.3);">
+                    <div style="font-size: 11px; color: #00d4ff;">💡 Quick Start</div>
+                    <div style="font-size: 10px; color: #aaa; margin-top: 4px;">1. Design your room below<br>2. Click "Add Room"<br>3. Select it and go to Properties tab<br>4. Add equipment from there!</div>
+                </div>
+
+                <div class="collapsible-section">
+                    <div class="collapsible-header" onclick="toggleSection(this)">
+                        <h2>🏗️ New Room</h2>
+                        <span class="collapsible-arrow">▼</span>
+                    </div>
+                    <div class="collapsible-content">
+                        <div class="control-group">
+                            <label>Room Name</label>
+                            <input type="text" id="room-name" placeholder="e.g., Main Quarters" value="New Room">
+                        </div>
+
+                        <div class="control-group">
+                            <label>Function</label>
+                            <select id="room-function">
+                                <option value="Crew Quarters">Crew Quarters</option>
+                                <option value="Command Center">Command Center</option>
+                                <option value="Laboratory">Laboratory</option>
+                                <option value="Medical Bay">Medical Bay</option>
+                                <option value="Galley">Galley</option>
+                                <option value="Exercise Area">Exercise Area</option>
+                                <option value="Hygiene">Hygiene</option>
+                                <option value="Storage">Storage</option>
+                                <option value="Airlock">Airlock</option>
+                                <option value="Recreation">Recreation</option>
+                                <option value="Engineering">Engineering</option>
+                                <option value="Greenhouse">Greenhouse</option>
+                            </select>
+                        </div>
+
+                        <button class="btn" onclick="addRoom()">➕ Add Room</button>
+                    </div>
+                </div>
+
+                <div class="collapsible-section">
+                    <div class="collapsible-header" onclick="toggleSection(this)">
+                        <h2>📐 Dimensions</h2>
+                        <span class="collapsible-arrow">▼</span>
+                    </div>
+                    <div class="collapsible-content">
+                        <div class="control-group">
+                            <label>Shape</label>
+                            <div class="shape-grid">
+                                <div class="shape-option selected" data-shape="box">📦 Box</div>
+                                <div class="shape-option" data-shape="cylinder">🛢️ Cylinder</div>
+                                <div class="shape-option" data-shape="sphere">⚪ Sphere</div>
+                                <div class="shape-option" data-shape="dome">🏛️ Dome</div>
+                            </div>
+                        </div>
+
+                        <div class="control-group">
+                            <label>Width (m): <span class="value-display" id="width-value">4</span></label>
+                            <input type="range" id="room-width" min="2" max="15" value="4" step="0.5">
+                        </div>
+
+                        <div class="control-group">
+                            <label>Length (m): <span class="value-display" id="length-value">6</span></label>
+                            <input type="range" id="room-length" min="2" max="15" value="6" step="0.5">
+                        </div>
+
+                        <div class="control-group">
+                            <label>Height (m): <span class="value-display" id="height-value">3</span></label>
+                            <input type="range" id="room-height" min="2" max="10" value="3" step="0.5">
+                        </div>
+
+                        <div class="control-group">
+                            <label>Volume: <span class="value-display" id="volume-display">72 m³</span></label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="collapsible-section">
+                    <div class="collapsible-header" onclick="toggleSection(this)">
+                        <h2>🎨 Appearance</h2>
+                        <span class="collapsible-arrow">▼</span>
+                    </div>
+                    <div class="collapsible-content">
+                        <div class="control-group">
+                            <label>Color</label>
+                            <input type="color" id="room-color" value="#2c3e50">
+                        </div>
+
+                        <div class="control-group">
+                            <label>Material</label>
+                            <div class="material-grid">
+                                <div class="material-option selected" data-material="metal">🔩 Metal</div>
+                                <div class="material-option" data-material="inflatable">🎈 Soft</div>
+                                <div class="material-option" data-material="composite">🧱 Mix</div>
+                                <div class="material-option" data-material="transparent">💎 Glass</div>
+                                <div class="material-option" data-material="concrete">🏗️ Solid</div>
+                                <div class="material-option" data-material="fabric">🧵 Fabric</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ROOMS TAB -->
+            <div id="rooms-tab" class="hidden">
+                <div class="collapsible-section">
+                    <div class="collapsible-header" onclick="toggleSection(this)">
+                        <h2>📋 All Rooms</h2>
+                        <span class="collapsible-arrow">▼</span>
+                    </div>
+                    <div class="collapsible-content">
+                        <div class="room-list" id="room-list">
+                            <p style="text-align: center; color: #888; font-size: 11px; padding: 15px;">No rooms yet</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="collapsible-section">
+                    <div class="collapsible-header" onclick="toggleSection(this)">
+                        <h2>📊 Statistics</h2>
+                        <span class="collapsible-arrow">▼</span>
+                    </div>
+                    <div class="collapsible-content">
+                        <div class="stats-grid">
+                            <div class="stat-box">
+                                <div class="stat-label">ROOMS</div>
+                                <div class="stat-value" id="total-rooms">0</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-label">VOLUME</div>
+                                <div class="stat-value" id="total-volume">0 m³</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-label">EQUIPMENT</div>
+                                <div class="stat-value" id="total-equipment">0</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Save/Load Section -->
+                <div class="collapsible-section">
+                    <div class="collapsible-header" onclick="toggleSection(this)">
+                        <h2>💾 Save & Load</h2>
+                        <span class="collapsible-arrow">▼</span>
+                    </div>
+                    <div class="collapsible-content">
+                        <div class="save-buttons">
+                            <button class="save-btn" onclick="saveHabitat()">💾 Save</button>
+                            <button class="save-btn" onclick="loadHabitat()">📂 Load</button>
+                            <button class="save-btn" onclick="downloadHabitat()">📥 Download</button>
+                        </div>
+                        <div style="font-size: 10px; color: #888; text-align: center; margin-top: 8px;">
+                            Save: Browser storage<br>
+                            Download: JSON file
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PROPERTIES TAB -->
+            <div id="properties-tab" class="hidden">
+                <div id="no-selection-msg" style="text-align: center; color: #888; padding: 20px; font-size: 12px;">
+                    Select a room to view properties
+                </div>
+
+                <div id="room-properties" class="hidden">
+                    <div style="background: rgba(0, 212, 255, 0.2); padding: 12px; border-radius: 6px; margin-bottom: 15px; border: 1px solid rgba(0, 212, 255, 0.4);">
+                        <div style="font-size: 11px; color: #888; margin-bottom: 4px;">SELECTED ROOM</div>
+                        <div style="font-size: 14px; font-weight: bold; color: #00d4ff;" id="selected-room-name">Room Name</div>
+                        <div style="font-size: 10px; color: #aaa; margin-top: 2px;" id="selected-room-info">Info</div>
+                    </div>
+
+                    <div class="collapsible-section">
+                        <div class="collapsible-header" onclick="toggleSection(this)">
+                            <h2>🛠️ Transform Tools</h2>
+                            <span class="collapsible-arrow">▼</span>
+                        </div>
+                        <div class="collapsible-content">
+                            <div class="axis-controls">
+                                <div class="axis-control">
+                                    <div class="axis-label">X Axis</div>
+                                    <button class="axis-btn" onclick="moveSelectedRoom(0.5, 0, 0)">+</button>
+                                    <button class="axis-btn" onclick="moveSelectedRoom(-0.5, 0, 0)">-</button>
+                                </div>
+                                <div class="axis-control">
+                                    <div class="axis-label">Y Axis</div>
+                                    <button class="axis-btn" onclick="moveSelectedRoom(0, 0.5, 0)">+</button>
+                                    <button class="axis-btn" onclick="moveSelectedRoom(0, -0.5, 0)">-</button>
+                                </div>
+                                <div class="axis-control">
+                                    <div class="axis-label">Z Axis</div>
+                                    <button class="axis-btn" onclick="moveSelectedRoom(0, 0, 0.5)">+</button>
+                                    <button class="axis-btn" onclick="moveSelectedRoom(0, 0, -0.5)">-</button>
+                                </div>
+                            </div>
+
+                            <div style="margin-top: 10px;">
+                                <button class="btn" onclick="resetSelectedRoomTransform()">🔄 Reset Transform</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="collapsible-section">
+                        <div class="collapsible-header" onclick="toggleSection(this)">
+                            <h2>➕ Add Equipment</h2>
+                            <span class="collapsible-arrow">▼</span>
+                        </div>
+                        <div class="collapsible-content">
+                            <p style="font-size: 10px; color: #888; margin-bottom: 8px;">Click to add to this room:</p>
+                            <div class="detail-items">
+                                <div class="detail-item" onclick="addEquipment('workstation')">💻 Workstation</div>
+                                <div class="detail-item" onclick="addEquipment('bed')">🛏️ Bed</div>
+                                <div class="detail-item" onclick="addEquipment('storage')">📦 Storage</div>
+                                <div class="detail-item" onclick="addEquipment('chair')">🪑 Chair</div>
+                                <div class="detail-item" onclick="addEquipment('table')">🪑 Table</div>
+                                <div class="detail-item" onclick="addEquipment('equipment')">⚙️ Equipment</div>
+                                <div class="detail-item" onclick="addEquipment('plant')">🌱 Plant</div>
+                                <div class="detail-item" onclick="addEquipment('monitor')">📺 Monitor</div>
+                                <div class="detail-item" onclick="addEquipment('medical')">⚕️ Medical</div>
+                                <div class="detail-item" onclick="addEquipment('exercise')">🏋️ Exercise</div>
+                                <div class="detail-item" onclick="addEquipment('shower')">🚿 Shower</div>
+                                <div class="detail-item" onclick="addEquipment('kitchen')">🍽️ Kitchen</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- NEW: Equipment Inventory -->
+                    <div class="collapsible-section">
+                        <div class="collapsible-header" onclick="toggleSection(this)">
+                            <h2>📋 Room Inventory</h2>
+                            <span class="collapsible-arrow">▼</span>
+                        </div>
+                        <div class="collapsible-content">
+                            <div id="equipment-list" style="max-height: 200px; overflow-y: auto; margin-bottom: 10px;">
+                                <p style="text-align: center; color: #888; font-size: 11px; padding: 10px;">No equipment in this room</p>
+                            </div>
+                            <div style="font-size: 10px; color: #888; text-align: center;">
+                                Double-click equipment in 3D view to delete
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-danger" onclick="deleteSelected()">🗑️ Delete Room</button>
+                </div>
+            </div>
+
+            <!-- EXAMINE TAB -->
+            <div id="examine-tab" class="hidden">
+                <div class="collapsible-section">
+                    <div class="collapsible-header" onclick="toggleSection(this)">
+                        <h2>🔬 NASA Analysis</h2>
+                        <span class="collapsible-arrow">▼</span>
+                    </div>
+                    <div class="collapsible-content">
+                        <div class="control-group">
+                            <label>Crew Size</label>
+                            <input type="number" id="crew-size" min="1" max="20" value="4" placeholder="Enter crew size">
+                        </div>
+
+                        <div class="control-group">
+                            <label>Mission Duration (days)</label>
+                            <input type="number" id="mission-duration" min="1" max="1000" value="180" placeholder="Mission duration">
+                        </div>
+
+                        <button class="btn" onclick="analyzeHabitat()">🚀 Analyze Habitat</button>
+                        
+                        <div id="analysis-results" style="margin-top: 15px; display: none;">
+                            <div style="background: rgba(0, 0, 0, 0.4); padding: 15px; border-radius: 6px; border: 1px solid rgba(0, 212, 255, 0.3);">
+                                <div style="font-size: 12px; font-weight: bold; color: #00d4ff; margin-bottom: 10px;">Analysis Results</div>
+                                <div id="analysis-content" style="font-size: 11px; line-height: 1.6; color: #ccc;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="collapsible-section">
+                    <div class="collapsible-header" onclick="toggleSection(this)">
+                        <h2>📊 Volume Assessment</h2>
+                        <span class="collapsible-arrow">▼</span>
+                    </div>
+                    <div class="collapsible-content">
+                        <div id="volume-analysis" style="font-size: 11px; color: #aaa;">
+                            <p style="text-align: center; padding: 15px; color: #666;">Run analysis first to see volume assessment</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="collapsible-section">
+                    <div class="collapsible-header" onclick="toggleSection(this)">
+                        <h2>⚠️ Risk Assessment</h2>
+                        <span class="collapsible-arrow">▼</span>
+                    </div>
+                    <div class="collapsible-content">
+                        <div id="risk-assessment" style="font-size: 11px; color: #aaa;">
+                            <p style="text-align: center; padding: 15px; color: #666;">Run analysis first to see risk assessment</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="collapsible-section">
+                    <div class="collapsible-header" onclick="toggleSection(this)">
+                        <h2>💡 Recommendations</h2>
+                        <span class="collapsible-arrow">▼</span>
+                    </div>
+                    <div class="collapsible-content">
+                        <div id="recommendations" style="font-size: 11px; color: #aaa;">
+                            <p style="text-align: center; padding: 15px; color: #666;">Run analysis first to see recommendations</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-view">
+            <div id="canvas-container"></div>
+            
+            <div class="controls-hint">
+                <div id="tool-hint">
+                    🖱️ <strong>Select Tool:</strong> Click to select objects<br>
+                    ⌨️ WASD: Move Camera | Q/E: Up/Down | Space: Reset
+                </div>
+            </div>
+
+            <div class="mode-indicator" id="mode-indicator">
+                🏗️ Build Mode - Select Tool
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let scene, camera, renderer;
+        let rooms = [];
+        let selectedRoom = null;
+        let selectedShape = 'box';
+        let selectedMaterial = 'metal';
+        let roomIdCounter = 0;
+        let equipmentIdCounter = 0;
+        let raycaster, mouse;
+        let keyState = {};
+        const moveSpeed = 0.5;
+
+        // Tool system variables
+        let activeTool = 'select';
+        let isDragging = false;
+        let dragStart = { x: 0, y: 0 };
+        let selectedObjectStartPosition = null;
+
+        const materials = {
+            metal: { roughness: 0.3, metalness: 0.8 },
+            inflatable: { roughness: 0.7, metalness: 0.0 },
+            composite: { roughness: 0.5, metalness: 0.3 },
+            transparent: { roughness: 0.1, metalness: 0.0, transparent: true, opacity: 0.6 },
+            concrete: { roughness: 0.9, metalness: 0.0 },
+            fabric: { roughness: 0.8, metalness: 0.0 }
+        };
+
+        // NASA Standards
+        const NASA_STANDARDS = {
+            volumePerCrew: 25, // m³ per crew member
+            functions: {
+                'Crew Quarters': { minVolume: 15, description: 'Sleep and personal space' },
+                'Command Center': { minVolume: 20, description: 'Mission control and operations' },
+                'Laboratory': { minVolume: 25, description: 'Scientific research' },
+                'Medical Bay': { minVolume: 15, description: 'Healthcare facilities' },
+                'Galley': { minVolume: 12, description: 'Food preparation and dining' },
+                'Exercise Area': { minVolume: 10, description: 'Physical fitness' },
+                'Hygiene': { minVolume: 8, description: 'Sanitation facilities' },
+                'Storage': { minVolume: 10, description: 'Equipment and supplies' },
+                'Airlock': { minVolume: 8, description: 'Entry/exit point' },
+                'Recreation': { minVolume: 15, description: 'Leisure activities' },
+                'Engineering': { minVolume: 20, description: 'Maintenance and repairs' },
+                'Greenhouse': { minVolume: 30, description: 'Food production' }
+            }
+        };
+
+        // Initialize Three.js
+        function initThree() {
+            // Create scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0a0e27);
+            
+            // Get container dimensions
+            const container = document.getElementById('canvas-container');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            
+            // Create camera
+            camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
+            camera.position.set(15, 15, 15);
+            camera.lookAt(0, 0, 0);
+            
+            // Create renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(width, height);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+            
+            // Add lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(10, 10, 10);
+            scene.add(directionalLight);
+            
+            // Add grid helper
+            const gridHelper = new THREE.GridHelper(50, 50, 0x00d4ff, 0x444444);
+            scene.add(gridHelper);
+
+            // Add axes helper
+            const axesHelper = new THREE.AxesHelper(5);
+            scene.add(axesHelper);
+            
+            // Initialize raycaster and mouse vector
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+            
+            // Setup controls
+            setupControls();
+            
+            // Start animation loop
+            animate();
+        }
+
+        // Setup controls
+        function setupControls() {
+            let isRotating = false;
+            let isPanning = false;
+            let previousMousePosition = { x: 0, y: 0 };
+            
+            // Keyboard controls
+            window.addEventListener('keydown', (e) => {
+                keyState[e.key.toLowerCase()] = true;
+                
+                if (e.key === ' ') {
+                    e.preventDefault();
+                    camera.position.set(15, 15, 15);
+                    camera.lookAt(0, 0, 0);
+                }
+            });
+            
+            window.addEventListener('keyup', (e) => {
+                keyState[e.key.toLowerCase()] = false;
+            });
+            
+            // Mouse controls
+            renderer.domElement.addEventListener('mousedown', (e) => {
+                const rect = renderer.domElement.getBoundingClientRect();
+                mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+                mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+                
+                raycaster.setFromCamera(mouse, camera);
+                
+                if (e.button === 0) { // Left click
+                    if (activeTool === 'select') {
+                        // Selection logic
+                        const intersects = raycaster.intersectObjects(scene.children, true);
+                        
+                        let objectSelected = false;
+                        for (let intersect of intersects) {
+                            let obj = intersect.object;
+                            
+                            // Check if we hit a room directly
+                            if (obj.userData.roomId !== undefined) {
+                                selectRoom(obj.userData.roomId);
+                                objectSelected = true;
+                                break;
+                            }
+                        }
+                        
+                        if (!objectSelected) {
+                            deselectAll();
+                        }
+                    } else if (activeTool === 'move' && selectedRoom !== null) {
+                        // Start move operation
+                        isDragging = true;
+                        dragStart.x = e.clientX;
+                        dragStart.y = e.clientY;
+                        
+                        const room = rooms.find(r => r.id === selectedRoom);
+                        if (room && room.mesh) {
+                            selectedObjectStartPosition = room.mesh.position.clone();
+                        }
+                    } else if (activeTool === 'scale' && selectedRoom !== null) {
+                        // Start scale operation
+                        isDragging = true;
+                        dragStart.x = e.clientX;
+                        dragStart.y = e.clientY;
+                        
+                        const room = rooms.find(r => r.id === selectedRoom);
+                        if (room && room.mesh) {
+                            selectedObjectStartPosition = room.mesh.scale.clone();
+                        }
+                    }
+                } else if (e.button === 2) { // Right click
+                    isPanning = true;
+                } else if (e.button === 1) { // Middle click
+                    isRotating = true;
+                }
+                
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+            
+            renderer.domElement.addEventListener('mousemove', (e) => {
+                const deltaX = e.clientX - previousMousePosition.x;
+                const deltaY = e.clientY - previousMousePosition.y;
+                
+                if (isRotating) {
+                    const rotateSpeed = 0.01;
+                    camera.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), -deltaX * rotateSpeed);
+                    const axis = new THREE.Vector3().crossVectors(camera.up, camera.position.clone().normalize());
+                    camera.position.applyAxisAngle(axis, -deltaY * rotateSpeed);
+                    camera.lookAt(0, 0, 0);
+                }
+                
+                if (isPanning) {
+                    camera.position.x -= deltaX * 0.02;
+                    camera.position.y += deltaY * 0.02;
+                    camera.lookAt(0, 0, 0);
+                }
+                
+                // Tool-based dragging
+                if (isDragging && selectedRoom !== null) {
+                    const room = rooms.find(r => r.id === selectedRoom);
+                    if (room && room.mesh) {
+                        const deltaX = e.clientX - dragStart.x;
+                        const deltaY = e.clientY - dragStart.y;
+                        
+                        if (activeTool === 'move') {
+                            const moveSpeed = 0.02;
+                            room.mesh.position.x = selectedObjectStartPosition.x + deltaX * moveSpeed;
+                            room.mesh.position.z = selectedObjectStartPosition.z - deltaY * moveSpeed;
+                            room.position.copy(room.mesh.position);
+                        } else if (activeTool === 'scale') {
+                            const scaleSpeed = 0.005;
+                            const scaleFactor = 1 + (deltaX - deltaY) * scaleSpeed;
+                            room.mesh.scale.set(
+                                selectedObjectStartPosition.x * scaleFactor,
+                                selectedObjectStartPosition.y * scaleFactor,
+                                selectedObjectStartPosition.z * scaleFactor
+                            );
+                        }
+                    }
+                }
+                
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+            
+            renderer.domElement.addEventListener('mouseup', () => {
+                isRotating = false;
+                isPanning = false;
+                isDragging = false;
+                selectedObjectStartPosition = null;
+            });
+            
+            renderer.domElement.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+            });
+            
+            renderer.domElement.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const zoomSpeed = 0.001;
+                camera.position.multiplyScalar(1 + e.deltaY * zoomSpeed);
+            });
+
+            // Double-click to delete equipment
+            renderer.domElement.addEventListener('dblclick', (e) => {
+                if (activeTool !== 'select') return;
+                
+                const rect = renderer.domElement.getBoundingClientRect();
+                mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+                mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+                
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(scene.children, true);
+                
+                for (let intersect of intersects) {
+                    let obj = intersect.object;
+                    
+                    // Traverse up to find equipment group
+                    while (obj && !obj.userData.isEquipment && obj.parent) {
+                        obj = obj.parent;
+                    }
+                    
+                    if (obj && obj.userData.isEquipment) {
+                        const roomId = obj.userData.roomId;
+                        const equipId = obj.userData.id;
+                        
+                        if (confirm('Delete this equipment?')) {
+                            deleteEquipment(roomId, equipId);
+                        }
+                        break;
+                    }
+                }
+            });
+
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                const container = document.getElementById('canvas-container');
+                const width = container.clientWidth;
+                const height = container.clientHeight;
+                
+                camera.aspect = width / height;
+                camera.updateProjectionMatrix();
+                renderer.setSize(width, height);
+            });
+        }
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Camera movement with WASD
+            if (keyState['w']) {
+                camera.position.add(new THREE.Vector3(0, 0, -moveSpeed));
+            }
+            if (keyState['s']) {
+                camera.position.add(new THREE.Vector3(0, 0, moveSpeed));
+            }
+            if (keyState['a']) {
+                camera.position.add(new THREE.Vector3(-moveSpeed, 0, 0));
+            }
+            if (keyState['d']) {
+                camera.position.add(new THREE.Vector3(moveSpeed, 0, 0));
+            }
+            if (keyState['q']) {
+                camera.position.add(new THREE.Vector3(0, moveSpeed, 0));
+            }
+            if (keyState['e']) {
+                camera.position.add(new THREE.Vector3(0, -moveSpeed, 0));
+            }
+            
+            camera.lookAt(0, 0, 0);
+            renderer.render(scene, camera);
+        }
+
+        // Tool system
+        function setActiveTool(tool) {
+            activeTool = tool;
+            
+            // Update UI
+            document.querySelectorAll('.tool-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`.tool-btn[data-tool="${tool}"]`).classList.add('active');
+            
+            // Update mode indicator
+            const toolNames = {
+                'select': 'Select Tool',
+                'move': 'Move Tool',
+                'scale': 'Scale Tool'
+            };
+            document.getElementById('mode-indicator').textContent = `🏗️ Build Mode - ${toolNames[tool]}`;
+            
+            // Update controls hint
+            const hints = {
+                'select': '🖱️ <strong>Select Tool:</strong> Click to select objects<br>⌨️ WASD: Move Camera | Q/E: Up/Down | Space: Reset',
+                'move': '🖱️ <strong>Move Tool:</strong> Click+drag to move selected object<br>⌨️ Arrow keys for precise movement',
+                'scale': '🖱️ <strong>Scale Tool:</strong> Click+drag to scale selected object<br>⌨️ +/- keys for precise scaling'
+            };
+            document.getElementById('tool-hint').innerHTML = hints[tool];
+        }
+
+        // Room creation and management
+        function createRoomMesh(shape, width, length, height, color, materialType) {
+            let geometry;
+            
+            switch(shape) {
+                case 'cylinder':
+                    geometry = new THREE.CylinderGeometry(width/2, width/2, height, 32);
+                    break;
+                case 'sphere':
+                    geometry = new THREE.SphereGeometry(width/2, 32, 32);
+                    break;
+                case 'dome':
+                    geometry = new THREE.SphereGeometry(width/2, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+                    break;
+                default:
+                    geometry = new THREE.BoxGeometry(width, height, length);
+            }
+            
+            const matProps = materials[materialType] || materials.metal;
+            const material = new THREE.MeshStandardMaterial({
+                color: color,
+                roughness: matProps.roughness,
+                metalness: matProps.metalness,
+                transparent: matProps.transparent || false,
+                opacity: matProps.opacity || 1.0
+            });
+            
+            return new THREE.Mesh(geometry, material);
+        }
+
+        function addRoom() {
+            const name = document.getElementById('room-name').value || 'New Room';
+            const func = document.getElementById('room-function').value;
+            const width = parseFloat(document.getElementById('room-width').value);
+            const length = parseFloat(document.getElementById('room-length').value);
+            const height = parseFloat(document.getElementById('room-height').value);
+            const color = document.getElementById('room-color').value;
+            
+            const volume = calculateVolume(selectedShape, width, length, height);
+            
+            const mesh = createRoomMesh(selectedShape, width, length, height, color, selectedMaterial);
+            
+            // Position rooms in a circle
+            const angle = rooms.length * 0.8;
+            const radius = 8 + Math.floor(rooms.length / 4) * 6;
+            mesh.position.set(
+                Math.cos(angle) * radius,
+                height / 2,
+                Math.sin(angle) * radius
+            );
+            
+            const roomId = roomIdCounter++;
+            mesh.userData.roomId = roomId;
+            
+            scene.add(mesh);
+            
+            const room = {
+                id: roomId,
+                name: name,
+                function: func,
+                shape: selectedShape,
+                width: width,
+                length: length,
+                height: height,
+                volume: volume,
+                color: color,
+                material: selectedMaterial,
+                mesh: mesh,
+                equipment: [],
+                position: mesh.position.clone()
+            };
+            
+            rooms.push(room);
+            updateRoomsList();
+            updateStats();
+        }
+
+        function calculateVolume(shape, width, length, height) {
+            switch(shape) {
+                case 'cylinder':
+                    return Math.PI * Math.pow(width/2, 2) * height;
+                case 'sphere':
+                    return (4/3) * Math.PI * Math.pow(width/2, 3);
+                case 'dome':
+                    return (2/3) * Math.PI * Math.pow(width/2, 3);
+                default:
+                    return width * length * height;
+            }
+        }
+
+        // Selection functions
+        function selectRoom(roomId) {
+            if (selectedRoom !== null && selectedRoom !== roomId) {
+                const prevRoom = rooms.find(r => r.id === selectedRoom);
+                if (prevRoom && prevRoom.mesh) {
+                    prevRoom.mesh.scale.set(1, 1, 1);
+                }
+            }
+            
+            selectedRoom = roomId;
+            const room = rooms.find(r => r.id === roomId);
+            
+            if (room && room.mesh) {
+                room.mesh.scale.set(1.05, 1.05, 1.05);
+                
+                showRoomProperties(room);
+                document.getElementById('mode-indicator').textContent = `🏠 Room: ${room.name}`;
+                updateRoomsList();
+                switchTab('properties');
+            }
+        }
+
+        function deselectAll() {
+            if (selectedRoom !== null) {
+                const room = rooms.find(r => r.id === selectedRoom);
+                if (room && room.mesh) {
+                    room.mesh.scale.set(1, 1, 1);
+                }
+            }
+            
+            selectedRoom = null;
+            
+            document.getElementById('no-selection-msg').classList.remove('hidden');
+            document.getElementById('room-properties').classList.add('hidden');
+            
+            document.getElementById('mode-indicator').textContent = '🏗️ Build Mode - Select Tool';
+        }
+
+        // Transform functions
+        function moveSelectedRoom(dx, dy, dz) {
+            if (selectedRoom !== null) {
+                const room = rooms.find(r => r.id === selectedRoom);
+                if (room && room.mesh) {
+                    room.mesh.position.x += dx;
+                    room.mesh.position.y += dy;
+                    room.mesh.position.z += dz;
+                    room.position.copy(room.mesh.position);
+                }
+            }
+        }
+
+        function resetSelectedRoomTransform() {
+            if (selectedRoom !== null) {
+                const room = rooms.find(r => r.id === selectedRoom);
+                if (room && room.mesh) {
+                    room.mesh.position.set(0, room.height / 2, 0);
+                    room.mesh.scale.set(1, 1, 1);
+                    room.position.copy(room.mesh.position);
+                }
+            }
+        }
+
+        function showRoomProperties(room) {
+            document.getElementById('no-selection-msg').classList.add('hidden');
+            document.getElementById('room-properties').classList.remove('hidden');
+            
+            document.getElementById('selected-room-name').textContent = room.name;
+            document.getElementById('selected-room-info').textContent = `${room.function} • ${room.volume.toFixed(1)} m³ • ${room.equipment.length} items`;
+            
+            // Update equipment list
+            updateEquipmentList(room);
+        }
+
+        function deleteSelected() {
+            if (selectedRoom !== null) {
+                const index = rooms.findIndex(r => r.id === selectedRoom);
+                if (index !== -1) {
+                    const room = rooms[index];
+                    scene.remove(room.mesh);
+                    rooms.splice(index, 1);
+                }
+            }
+            
+            deselectAll();
+            updateRoomsList();
+            updateStats();
+        }
+
+        // UI functions
+        function toggleSection(header) {
+            const section = header.parentElement;
+            section.classList.toggle('collapsed');
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById('create-tab').classList.add('hidden');
+            document.getElementById('rooms-tab').classList.add('hidden');
+            document.getElementById('properties-tab').classList.add('hidden');
+            document.getElementById('examine-tab').classList.add('hidden');
+            
+            const tabElements = document.querySelectorAll('.tab-btn');
+            if (tab === 'create') {
+                document.getElementById('create-tab').classList.remove('hidden');
+                tabElements[0].classList.add('active');
+            } else if (tab === 'rooms') {
+                document.getElementById('rooms-tab').classList.remove('hidden');
+                tabElements[1].classList.add('active');
+            } else if (tab === 'properties') {
+                document.getElementById('properties-tab').classList.remove('hidden');
+                tabElements[2].classList.add('active');
+            } else if (tab === 'examine') {
+                document.getElementById('examine-tab').classList.remove('hidden');
+                tabElements[3].classList.add('active');
+            }
+        }
+
+        function updateRoomsList() {
+            const listDiv = document.getElementById('room-list');
+            const roomCount = document.getElementById('room-count');
+            
+            if (rooms.length === 0) {
+                listDiv.innerHTML = '<p style="text-align: center; color: #888; font-size: 11px; padding: 15px;">No rooms yet</p>';
+                roomCount.textContent = '0';
+                return;
+            }
+            
+            listDiv.innerHTML = '';
+            rooms.forEach(room => {
+                const item = document.createElement('div');
+                item.className = 'room-item';
+                if (selectedRoom === room.id) {
+                    item.classList.add('selected');
+                }
+                item.onclick = () => selectRoom(room.id);
+                
+                const equipmentCount = room.equipment.length;
+                const equipmentText = equipmentCount > 0 ? ` • ${equipmentCount} items` : '';
+                
+                item.innerHTML = `
+                    <div style="font-weight: bold; color: #00d4ff; margin-bottom: 4px;">${room.name}</div>
+                    <div style="font-size: 10px; color: #888;">${room.function} • ${room.volume.toFixed(1)} m³${equipmentText}</div>
+                `;
+                
+                listDiv.appendChild(item);
+            });
+            
+            roomCount.textContent = rooms.length;
+        }
+
+        function updateStats() {
+            const totalVolume = rooms.reduce((sum, room) => sum + room.volume, 0);
+            const totalEquipment = rooms.reduce((sum, room) => sum + room.equipment.length, 0);
+            
+            document.getElementById('total-rooms').textContent = rooms.length;
+            document.getElementById('total-volume').textContent = totalVolume.toFixed(1) + ' m³';
+            document.getElementById('total-equipment').textContent = totalEquipment;
+        }
+
+        // Equipment functions
+        function createEquipmentMesh(type) {
+            const group = new THREE.Group();
+            let mainMesh;
+            
+            switch(type) {
+                case 'workstation':
+                    const desk = new THREE.Mesh(
+                        new THREE.BoxGeometry(1.2, 0.05, 0.6),
+                        new THREE.MeshStandardMaterial({ color: 0x4a90e2, roughness: 0.4, metalness: 0.6 })
+                    );
+                    desk.position.y = 0.4;
+                    group.add(desk);
+                    
+                    const monitor = new THREE.Mesh(
+                        new THREE.BoxGeometry(0.6, 0.4, 0.05),
+                        new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.3, metalness: 0.7 })
+                    );
+                    monitor.position.set(0, 0.65, -0.2);
+                    group.add(monitor);
+                    
+                    mainMesh = desk;
+                    break;
+                    
+                case 'bed':
+                    const mattress = new THREE.Mesh(
+                        new THREE.BoxGeometry(0.8, 0.15, 1.8),
+                        new THREE.MeshStandardMaterial({ color: 0x9b59b6, roughness: 0.8, metalness: 0.1 })
+                    );
+                    mattress.position.y = 0.15;
+                    group.add(mattress);
+                    mainMesh = mattress;
+                    break;
+                    
+                default:
+                    mainMesh = new THREE.Mesh(
+                        new THREE.BoxGeometry(0.3, 0.3, 0.3),
+                        new THREE.MeshStandardMaterial({ color: 0xffffff })
+                    );
+                    group.add(mainMesh);
+            }
+            
+            group.userData.isEquipment = true;
+            group.userData.type = type;
+            group.userData.mainMesh = mainMesh;
+            
+            return group;
+        }
+
+        function addEquipment(type) {
+            if (selectedRoom === null) return;
+            
+            const room = rooms.find(r => r.id === selectedRoom);
+            if (!room) return;
+            
+            const equipMesh = createEquipmentMesh(type);
+            const equipId = equipmentIdCounter++;
+            
+            equipMesh.userData.id = equipId;
+            equipMesh.userData.roomId = room.id;
+            
+            // Position equipment inside the room
+            const count = room.equipment.length;
+            const angle = (count / (count + 1)) * Math.PI * 2;
+            const radius = Math.min(room.width, room.length) * 0.25;
+            
+            equipMesh.position.set(
+                Math.cos(angle) * radius,
+                0.5,
+                Math.sin(angle) * radius
+            );
+            
+            room.mesh.add(equipMesh);
+            room.equipment.push({
+                id: equipId,
+                type: type,
+                mesh: equipMesh
+            });
+            
+            updateStats();
+            showRoomProperties(room);
+        }
+
+        // NEW: Equipment management functions
+        function updateEquipmentList(room) {
+            const equipmentList = document.getElementById('equipment-list');
+            
+            if (!room || room.equipment.length === 0) {
+                equipmentList.innerHTML = '<p style="text-align: center; color: #888; font-size: 11px; padding: 10px;">No equipment in this room</p>';
+                return;
+            }
+            
+            equipmentList.innerHTML = '';
+            room.equipment.forEach(equip => {
+                const equipItem = document.createElement('div');
+                equipItem.className = 'equipment-item';
+                
+                const emojis = {
+                    'workstation': '💻',
+                    'bed': '🛏️',
+                    'storage': '📦',
+                    'chair': '🪑',
+                    'table': '🪑',
+                    'equipment': '⚙️',
+                    'plant': '🌱',
+                    'monitor': '📺',
+                    'medical': '⚕️',
+                    'exercise': '🏋️',
+                    'shower': '🚿',
+                    'kitchen': '🍽️'
+                };
+                
+                equipItem.innerHTML = `
+                    <div>
+                        <span style="font-size: 14px;">${emojis[equip.type] || '📦'}</span>
+                        <span style="font-size: 11px; margin-left: 8px; color: #ccc;">${equip.type}</span>
+                    </div>
+                    <button class="equipment-delete" onclick="deleteEquipment(${room.id}, ${equip.id})">
+                        Delete
+                    </button>
+                `;
+                
+                equipmentList.appendChild(equipItem);
+            });
+        }
+
+        function deleteEquipment(roomId, equipId) {
+            const room = rooms.find(r => r.id === roomId);
+            if (!room) return;
+            
+            const equipIndex = room.equipment.findIndex(e => e.id === equipId);
+            if (equipIndex === -1) return;
+            
+            const equipment = room.equipment[equipIndex];
+            room.mesh.remove(equipment.mesh);
+            room.equipment.splice(equipIndex, 1);
+            
+            updateEquipmentList(room);
+            updateStats();
+            
+            // Update room info
+            if (selectedRoom === roomId) {
+                showRoomProperties(room);
+            }
+        }
+
+        // NEW: Save/Load functionality
+        function saveHabitat() {
+            const habitatData = {
+                rooms: rooms.map(room => ({
+                    id: room.id,
+                    name: room.name,
+                    function: room.function,
+                    shape: room.shape,
+                    width: room.width,
+                    length: room.length,
+                    height: room.height,
+                    volume: room.volume,
+                    color: room.color,
+                    material: room.material,
+                    position: {
+                        x: room.position.x,
+                        y: room.position.y,
+                        z: room.position.z
+                    },
+                    equipment: room.equipment.map(equip => ({
+                        id: equip.id,
+                        type: equip.type,
+                        position: {
+                            x: equip.mesh.position.x,
+                            y: equip.mesh.position.y,
+                            z: equip.mesh.position.z
+                        }
+                    }))
+                })),
+                metadata: {
+                    savedAt: new Date().toISOString(),
+                    version: '1.0',
+                    totalRooms: rooms.length,
+                    totalVolume: rooms.reduce((sum, room) => sum + room.volume, 0)
+                }
+            };
+            
+            localStorage.setItem('spaceHabitatDesign', JSON.stringify(habitatData));
+            
+            // Show save confirmation
+            const indicator = document.getElementById('mode-indicator');
+            const originalText = indicator.textContent;
+            indicator.textContent = '💾 Design Saved!';
+            indicator.style.background = 'rgba(46, 204, 113, 0.9)';
+            
+            setTimeout(() => {
+                indicator.textContent = originalText;
+                indicator.style.background = '';
+            }, 2000);
+        }
+
+        function downloadHabitat() {
+            const habitatData = {
+                rooms: rooms.map(room => ({
+                    name: room.name,
+                    function: room.function,
+                    shape: room.shape,
+                    dimensions: {
+                        width: room.width,
+                        length: room.length,
+                        height: room.height
+                    },
+                    volume: room.volume,
+                    material: room.material,
+                    equipment: room.equipment.map(equip => ({
+                        type: equip.type
+                    }))
+                })),
+                analysis: {
+                    totalRooms: rooms.length,
+                    totalVolume: rooms.reduce((sum, room) => sum + room.volume, 0),
+                    totalEquipment: rooms.reduce((sum, room) => sum + room.equipment.length, 0),
+                    generatedAt: new Date().toLocaleString()
+                }
+            };
+            
+            const dataStr = JSON.stringify(habitatData, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = `space-habitat-${new Date().getTime()}.json`;
+            link.click();
+            
+            // Show download confirmation
+            const indicator = document.getElementById('mode-indicator');
+            const originalText = indicator.textContent;
+            indicator.textContent = '📥 Design Downloaded!';
+            indicator.style.background = 'rgba(52, 152, 219, 0.9)';
+            
+            setTimeout(() => {
+                indicator.textContent = originalText;
+                indicator.style.background = '';
+            }, 2000);
+        }
+
+        function loadHabitat() {
+            const saved = localStorage.getItem('spaceHabitatDesign');
+            if (!saved) {
+                alert('No saved design found!');
+                return;
+            }
+            
+            if (confirm('Load saved design? This will replace your current work.')) {
+                try {
+                    const habitatData = JSON.parse(saved);
+                    
+                    // Clear current scene
+                    rooms.forEach(room => {
+                        scene.remove(room.mesh);
+                    });
+                    rooms = [];
+                    
+                    // Load rooms
+                    habitatData.rooms.forEach(roomData => {
+                        const mesh = createRoomMesh(
+                            roomData.shape, 
+                            roomData.width, 
+                            roomData.length, 
+                            roomData.height, 
+                            roomData.color, 
+                            roomData.material
+                        );
+                        
+                        mesh.position.set(
+                            roomData.position.x,
+                            roomData.position.y,
+                            roomData.position.z
+                        );
+                        
+                        const roomId = roomIdCounter++;
+                        mesh.userData.roomId = roomId;
+                        scene.add(mesh);
+                        
+                        const room = {
+                            id: roomId,
+                            name: roomData.name,
+                            function: roomData.function,
+                            shape: roomData.shape,
+                            width: roomData.width,
+                            length: roomData.length,
+                            height: roomData.height,
+                            volume: roomData.volume,
+                            color: roomData.color,
+                            material: roomData.material,
+                            mesh: mesh,
+                            equipment: [],
+                            position: mesh.position.clone()
+                        };
+                        
+                        // Load equipment
+                        roomData.equipment.forEach(equipData => {
+                            const equipMesh = createEquipmentMesh(equipData.type);
+                            const equipId = equipmentIdCounter++;
+                            
+                            equipMesh.userData.id = equipId;
+                            equipMesh.userData.roomId = roomId;
+                            equipMesh.position.set(
+                                equipData.position.x,
+                                equipData.position.y,
+                                equipData.position.z
+                            );
+                            
+                            room.mesh.add(equipMesh);
+                            room.equipment.push({
+                                id: equipId,
+                                type: equipData.type,
+                                mesh: equipMesh
+                            });
+                        });
+                        
+                        rooms.push(room);
+                    });
+                    
+                    updateRoomsList();
+                    updateStats();
+                    deselectAll();
+                    
+                    // Show load confirmation
+                    const indicator = document.getElementById('mode-indicator');
+                    indicator.textContent = '📂 Design Loaded!';
+                    indicator.style.background = 'rgba(155, 89, 182, 0.9)';
+                    
+                    setTimeout(() => {
+                        indicator.textContent = '🏗️ Build Mode - Select Tool';
+                        indicator.style.background = '';
+                    }, 2000);
+                    
+                } catch (error) {
+                    alert('Error loading design: ' + error.message);
+                }
+            }
+        }
+
+        // Analysis functions
+        function analyzeHabitat() {
+            const crewSize = parseInt(document.getElementById('crew-size').value) || 4;
+            const missionDuration = parseInt(document.getElementById('mission-duration').value) || 180;
+            
+            const resultsDiv = document.getElementById('analysis-results');
+            const contentDiv = document.getElementById('analysis-content');
+            const volumeDiv = document.getElementById('volume-analysis');
+            const riskDiv = document.getElementById('risk-assessment');
+            const recDiv = document.getElementById('recommendations');
+            
+            resultsDiv.style.display = 'block';
+
+            if (rooms.length === 0) {
+                contentDiv.innerHTML = '<span class="status-indicator status-error"></span> <strong>No Habitat Design</strong><br>Create rooms to begin analysis.';
+                return;
+            }
+
+            // Calculate basic metrics
+            const totalVolume = rooms.reduce((sum, room) => sum + room.volume, 0);
+            const volumePerCrew = totalVolume / crewSize;
+            const requiredVolumePerCrew = NASA_STANDARDS.volumePerCrew;
+            const volumeEfficiency = (volumePerCrew / requiredVolumePerCrew) * 100;
+
+            // Generate analysis
+            let analysis = `<span class="status-indicator ${volumeEfficiency >= 100 ? 'status-good' : volumeEfficiency >= 80 ? 'status-warning' : 'status-error'}"></span> <strong>Habitat Analysis</strong><br><br>`;
+            
+            analysis += `<span class="status-indicator ${volumeEfficiency >= 100 ? 'status-good' : 'status-warning'}"></span> <strong>Volume Analysis:</strong><br>`;
+            analysis += `• Total Volume: ${totalVolume.toFixed(1)} m³<br>`;
+            analysis += `• Volume per Crew: ${volumePerCrew.toFixed(1)} m³<br>`;
+            analysis += `• Required: ${requiredVolumePerCrew} m³ per crew<br>`;
+            analysis += `• Efficiency: ${volumeEfficiency.toFixed(1)}%<br><br>`;
+            
+            analysis += `<span class="status-indicator status-good"></span> <strong>Room Count:</strong> ${rooms.length}<br>`;
+            analysis += `<span class="status-indicator status-good"></span> <strong>Crew Size:</strong> ${crewSize}<br>`;
+            analysis += `<span class="status-indicator status-good"></span> <strong>Mission Duration:</strong> ${missionDuration} days<br>`;
+            
+            contentDiv.innerHTML = analysis;
+            
+            // Volume assessment
+            let volumeHtml = '';
+            if (volumeEfficiency >= 120) {
+                volumeHtml = `<span class="status-indicator status-good"></span> <strong>Excellent Volume</strong><br>`;
+                volumeHtml += `Habitat exceeds requirements by ${(volumeEfficiency - 100).toFixed(1)}%`;
+            } else if (volumeEfficiency >= 100) {
+                volumeHtml = `<span class="status-indicator status-good"></span> <strong>Sufficient Volume</strong><br>`;
+                volumeHtml += `Habitat meets minimum requirements`;
+            } else if (volumeEfficiency >= 80) {
+                volumeHtml = `<span class="status-indicator status-warning"></span> <strong>Marginal Volume</strong><br>`;
+                volumeHtml += `Habitat is ${(100 - volumeEfficiency).toFixed(1)}% below requirements`;
+            } else {
+                volumeHtml = `<span class="status-indicator status-error"></span> <strong>Critical Volume</strong><br>`;
+                volumeHtml += `Habitat is ${(100 - volumeEfficiency).toFixed(1)}% below requirements`;
+            }
+            volumeDiv.innerHTML = volumeHtml;
+            
+            // Risk assessment
+            let riskHtml = '';
+            if (volumeEfficiency < 80) {
+                riskHtml = `<span class="status-indicator status-error"></span> <strong>High Risk</strong><br>`;
+                riskHtml += `• Insufficient living space<br>`;
+                riskHtml += `• Potential crew stress and conflict<br>`;
+                riskHtml += `• Limited storage capacity`;
+            } else if (volumeEfficiency < 100) {
+                riskHtml = `<span class="status-indicator status-warning"></span> <strong>Medium Risk</strong><br>`;
+                riskHtml += `• Limited personal space<br>`;
+                riskHtml += `• Reduced comfort for long missions`;
+            } else {
+                riskHtml = `<span class="status-indicator status-good"></span> <strong>Low Risk</strong><br>`;
+                riskHtml += `• Adequate living space<br>`;
+                riskHtml += `• Good crew comfort levels`;
+            }
+            riskDiv.innerHTML = riskHtml;
+            
+            // Recommendations
+            let recHtml = '';
+            if (volumeEfficiency < 100) {
+                const additionalVolume = (requiredVolumePerCrew * crewSize) - totalVolume;
+                recHtml = `<strong>Recommendations:</strong><br>`;
+                recHtml += `• Add approximately ${additionalVolume.toFixed(1)} m³ of volume<br>`;
+                recHtml += `• Consider larger room sizes<br>`;
+                recHtml += `• Add more functional spaces`;
+            } else {
+                recHtml = `<span class="status-indicator status-good"></span> <strong>Design Compliant</strong><br>`;
+                recHtml += `Habitat meets NASA standards for ${crewSize} crew on a ${missionDuration}-day mission`;
+            }
+            recDiv.innerHTML = recHtml;
+        }
+
+        // Initialize the application when the page loads
+        window.addEventListener('DOMContentLoaded', () => {
+            initThree();
+            
+            // Initialize UI event listeners
+            document.querySelectorAll('.shape-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    document.querySelectorAll('.shape-option').forEach(o => o.classList.remove('selected'));
+                    this.classList.add('selected');
+                    selectedShape = this.dataset.shape;
+                    updateVolumeDisplay();
+                });
+            });
+            
+            document.querySelectorAll('.material-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    document.querySelectorAll('.material-option').forEach(o => o.classList.remove('selected'));
+                    this.classList.add('selected');
+                    selectedMaterial = this.dataset.material;
+                });
+            });
+            
+            // Initialize dimension sliders
+            ['room-width', 'room-length', 'room-height'].forEach(id => {
+                const input = document.getElementById(id);
+                const valueId = id.replace('room-', '') + '-value';
+                input.addEventListener('input', function() {
+                    document.getElementById(valueId).textContent = this.value;
+                    updateVolumeDisplay();
+                });
+            });
+            
+            updateVolumeDisplay();
+            setActiveTool('select');
+        });
+
+        function updateVolumeDisplay() {
+            const shape = selectedShape;
+            const width = parseFloat(document.getElementById('room-width').value);
+            const length = parseFloat(document.getElementById('room-length').value);
+            const height = parseFloat(document.getElementById('room-height').value);
+            const volume = calculateVolume(shape, width, length, height);
+            document.getElementById('volume-display').textContent = volume.toFixed(1) + ' m³';
+        }
+    </script>
+</body>
+</html>
